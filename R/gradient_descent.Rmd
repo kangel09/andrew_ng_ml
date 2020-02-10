@@ -185,7 +185,7 @@ The file ex1data2.txt contains a training set of housing prices in Portland, Ore
 The ex1 multi.m script has been set up to help you step through this exercise.
 
 
-```{r}
+```{r message=FALSE}
 home_prices <- read_csv("../data/ex1data2.txt", col_names = FALSE)
 colnames(home_prices) <- c("sq_feet", "n_bedrooms", "price")
 ```

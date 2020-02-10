@@ -526,14 +526,8 @@ p + geom_line(aes(x = population_profit$population, y = y_pred), size = 1.5, col
 <p>In this part, you will implement linear regression with multiple variables to predict the prices of houses. Suppose you are selling your house and you want to know what a good market price would be. One way to do this is to first collect information on recent houses sold and make a model of housing prices.</p>
 <p>The file ex1data2.txt contains a training set of housing prices in Portland, Oregon. The first column is the size of the house (in square feet), the second column is the number of bedrooms, and the third column is the price of the house.</p>
 <p>The ex1 multi.m script has been set up to help you step through this exercise.</p>
-<pre class="r"><code>home_prices &lt;- read_csv(&quot;../data/ex1data2.txt&quot;, col_names = FALSE)</code></pre>
-<pre><code>## Parsed with column specification:
-## cols(
-##   X1 = col_double(),
-##   X2 = col_double(),
-##   X3 = col_double()
-## )</code></pre>
-<pre class="r"><code>colnames(home_prices) &lt;- c(&quot;sq_feet&quot;, &quot;n_bedrooms&quot;, &quot;price&quot;)</code></pre>
+<pre class="r"><code>home_prices &lt;- read_csv(&quot;../data/ex1data2.txt&quot;, col_names = FALSE)
+colnames(home_prices) &lt;- c(&quot;sq_feet&quot;, &quot;n_bedrooms&quot;, &quot;price&quot;)</code></pre>
 </div>
 <div id="feature-normalization" class="section level2">
 <h2>Feature Normalization</h2>

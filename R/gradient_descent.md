@@ -229,18 +229,6 @@ The ex1 multi.m script has been set up to help you step through this exercise.
 
 ```r
 home_prices <- read_csv("../data/ex1data2.txt", col_names = FALSE)
-```
-
-```
-## Parsed with column specification:
-## cols(
-##   X1 = col_double(),
-##   X2 = col_double(),
-##   X3 = col_double()
-## )
-```
-
-```r
 colnames(home_prices) <- c("sq_feet", "n_bedrooms", "price")
 ```
 
