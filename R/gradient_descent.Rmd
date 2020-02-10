@@ -2,11 +2,15 @@
 title: "Gradient Descent"
 author: "Kristi Angel"
 date: "2/2/2020"
-output: rmarkdown::github_document
+output: 
+  html_document:
+    keep_md: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+  fig.path = "README_figs/README-"
+)
 library(tidyverse)
 ```
 
