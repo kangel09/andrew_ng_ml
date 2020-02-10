@@ -2,7 +2,7 @@
 title: "Gradient Descent"
 author: "Kristi Angel"
 date: "2/2/2020"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}

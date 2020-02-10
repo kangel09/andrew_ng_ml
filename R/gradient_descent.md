@@ -1,0 +1,389 @@
+Gradient Descent
+================
+Kristi Angel
+2/2/2020
+
+# Programming Exercise 1: Linear Regression
+
+This exercise is intended to replicate the first assignment in Andrew
+Ng’s Machine Learning Coursera course using R rather than Matlab.
+
+## Introduction
+
+In this exercise, you will implement linear regression and get to see it
+work on data. Before starting on this programming exercise, we strongly
+recommend watching the video lectures and completing the review
+questions for the associated topics.
+
+Files included in this exercise:
+
+  - ex1.m - Octave/MATLAB script that steps you through the exercise  
+  - ex1\_multi.m - Octave/MATLAB script for the later parts of the
+    exercise  
+  - ex1data1.txt - Dataset for linear regression with one variable  
+  - ex1data2.txt - Dataset for linear regression with multiple
+    variables  
+  - submit.m - Submission script that sends your solutions to our
+    servers  
+  - \[\(\star\)\] warmUpExercise.m - Simple example function in
+    Octave/MATLAB
+  - \[\(\star\)\] plotData.m - Function to display the dataset  
+  - \[\(\star\)\] computeCost.m - Function to compute the cost of linear
+    regression  
+  - \[\(\star\)\] gradientDescent.m - Function to run gradient descent  
+  - \[\(\dagger\)\] computeCostMulti.m - Cost function for multiple
+    variables  
+  - \[\(\dagger\)\] gradientDescentMulti.m - Gradient descent for
+    multiple variables  
+  - \[\(\dagger\)\] featureNormalize.m - Function to normalize
+    features  
+  - \[\(\dagger\)\] normalEqn.m - Function to compute the normal
+    equations
+
+\[\(\star\)\] indicates files you will need to complete  
+\[\(\dagger\)\] indicates optional exercises
+
+``` r
+population_profit <- read_csv("../data/ex1data1.txt", col_names = FALSE)
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   X1 = col_double(),
+    ##   X2 = col_double()
+    ## )
+
+``` r
+colnames(population_profit) <- c("population", "profit")
+```
+
+## Linear regression with one variable
+
+In this part of this exercise, you will implement linear regression with
+one variable to predict profits for a food truck. Suppose you are the
+CEO of a restaurant franchise and are considering different cities for
+opening a new outlet. The chain already has trucks in various cities and
+you have data for profits and populations from the cities.
+
+You would like to use this data to help you select which city to expand
+to next.
+
+The file ex1data1.txt contains the dataset for our linear regression
+problem. The first column is the population of a city and the second
+column is the profit of a food truck in that city. A negative value for
+profit indicates a loss.
+
+## Visualizing the Data
+
+Generating a scatterplot to better understand the data
+
+``` r
+theme <- theme_classic() + 
+            theme(plot.title = element_text(color = "gray30", size=18, face="bold"), 
+                  axis.title.x = element_text(color = "gray34"),
+                  axis.title.y = element_text(color = "gray34"))
+population_profit %>%
+  ggplot(aes(x = population, y = profit)) + 
+  geom_point(color = "blue4", size = 5, alpha = 0.65) + 
+  ggtitle("Restaurant Profits by City Population") + 
+  ylab("Profit in $10,000's") + 
+  xlab("Population of City in 10,000's") +
+  theme
+```
+
+![](gradient_descent_files/figure-gfm/scatter-1.png)<!-- -->
+
+## Gradient Descent
+
+In this part, you will fit the linear regression parameters θ to our
+dataset using gradient descent.
+
+The objective of linear regression is to minimize the cost
+function,
+
+\[J(\theta) = \frac{1}{2m}\sum_{i=1}^{m}(h_{\theta}(x^{(i)}) - y^{(i)})^2\]
+
+where the hypothesis hθ(x) is given by the linear model
+
+\[h_{\theta}(x) = \theta^{T}x = \theta_0 + \theta_1x_1\] Recall that the
+parameters of your model are the θj values. These are the values you
+will adjust to minimize cost J(θ). One way to do this is to use the
+batch gradient descent algorithm. In batch gradient descent, each
+iteration performs the
+update
+
+\[\theta_j := \theta_j - \alpha\frac{1}{m}\sum_{i=1}^{m}(h_{\theta}(x^{(i)}) - y^{(i)})x^{(i)}_{j}\]
+With each step of gradient descent, your parameters θj come closer to
+the optimal values that will achieve the lowest cost J(θ).
+
+**Implementation Note:** We store each example as a row in the the X
+matrix in Octave/MATLAB. To take into account the intercept term (θ0),
+we add an additional first column to X and set it to all ones. This
+allows us to treat θ0 as simply another ‘feature’.
+
+``` r
+# Add a column of ones to x
+# initialize fitting parameters
+x <- population_profit %>%
+      select(population) %>%
+      mutate(bias = rep(1, nrow(.))) %>%
+      select(bias, population)
+X <- as.matrix(x)
+head(X)
+```
+
+    ##      bias population
+    ## [1,]    1     6.1101
+    ## [2,]    1     5.5277
+    ## [3,]    1     8.5186
+    ## [4,]    1     7.0032
+    ## [5,]    1     5.8598
+    ## [6,]    1     8.3829
+
+``` r
+y <- population_profit %>%
+      select(profit)
+y <- as.matrix(y)
+theta <- as.matrix(rep(0, ncol(X)))
+```
+
+As you perform gradient descent to learn minimize the cost function
+J(θ), it is helpful to monitor the convergence by computing the cost.
+In this section, you will implement a function to calculate J(θ) so you
+can check the convergence of your gradient descent implementation.
+
+Your next task is to complete the code in the file computeCost.m, which
+is a function that computes J(θ). As you are doing this, remember that
+the variables X and y are not scalar values, but matrices whose rows
+represent the examples from the training set.
+
+Once you have completed the function, the next step in ex1.m will run
+computeCost once using θ initialized to zeros, and you will see the cost
+printed to the screen.
+
+In the first example, you should expect to see a cost of 32.07. In the
+second you should expect to see an expected cost value of 54.24.
+
+``` r
+costFunction <- function(X, theta, y){
+  m <- nrow(y)
+  predicted <- X %*% theta
+  sum_square_err <- sum((predicted - y) ^ 2)
+  j_theta <- sum_square_err / (2* m)
+  return(j_theta)
+}
+
+costFunction(X, theta, y)
+```
+
+    ## [1] 32.07273
+
+``` r
+theta2 = matrix(c(-1, 2), nrow = 2)
+costFunction(X, theta2, y)
+```
+
+    ## [1] 54.24246
+
+``` r
+iterations <- 1500
+alpha <-  0.01
+cost <- rep(NA, iterations)
+  
+gradientDescent <- function(X, y, alpha, iterations){
+  theta <- as.matrix(rep(0, ncol(X)))
+  m <- length(y)
+  
+  for(i in 1:iterations){
+    predicted <- X %*% theta # 97x1 matrix
+    theta <- theta - ((alpha / m) * (t(X) %*% (predicted - y)))
+    cost[i] <- costFunction(X, theta, y)
+  }
+  return(list(theta, cost))
+}
+
+# might also want to define a convergence threshold and stopping criteria
+model <- gradientDescent(X, y, alpha, iterations)
+```
+
+The theta values are: \(\theta_0\) = -3.6303 and \(\theta_1\) = 1.1664.
+The cost is minimized at \(J(\theta)\) = 4.4834.
+
+We can observe how the cost function decreases with each iteration.
+
+``` r
+cost <- model[[2]]
+iteration <- 1:1500
+data <- tibble(iteration, cost)
+data %>% ggplot(aes(x = iteration, y = cost)) +
+  geom_point(color = "blue4", alpha = 0.075, size = 3) + 
+  ggtitle("Cost Fuction As a Function of Algorithm Iteration") + 
+  theme
+```
+
+![](gradient_descent_files/figure-gfm/cost_v_iteration-1.png)<!-- -->
+
+### Fitting the Model
+
+Let’s see how well our parameters fit the data.
+
+``` r
+y_pred <- model[[1]][1] + model[[1]][2] * population_profit$population
+p <- population_profit %>% ggplot(aes(population, profit)) +
+  geom_point(color = "blue4", alpha = 0.65, size = 5)
+p + geom_line(aes(x = population_profit$population, y = y_pred), size = 1.5, color = "grey25") + 
+  theme +
+  ggtitle("Linear Regression: Profit as a Function of Population") + 
+  xlab("Population in 10,000s") + 
+  ylab("Profit in 10,000s")
+```
+
+![](gradient_descent_files/figure-gfm/model_fit-1.png)<!-- -->
+
+## Linear regression with multiple variables
+
+In this part, you will implement linear regression with multiple
+variables to predict the prices of houses. Suppose you are selling your
+house and you want to know what a good market price would be. One way to
+do this is to first collect information on recent houses sold and make a
+model of housing prices.
+
+The file ex1data2.txt contains a training set of housing prices in
+Portland, Oregon. The first column is the size of the house (in square
+feet), the second column is the number of bedrooms, and the third column
+is the price of the house.
+
+The ex1 multi.m script has been set up to help you step through this
+exercise.
+
+``` r
+home_prices <- read_csv("../data/ex1data2.txt", col_names = FALSE)
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   X1 = col_double(),
+    ##   X2 = col_double(),
+    ##   X3 = col_double()
+    ## )
+
+``` r
+colnames(home_prices) <- c("sq_feet", "n_bedrooms", "price")
+```
+
+## Feature Normalization
+
+The ex1 multi.m script will start by loading and displaying some values
+from this dataset. By looking at the values, note that house sizes are
+about 1000 times the number of bedrooms. When features differ by orders
+of mag- nitude, first performing feature scaling can make gradient
+descent converge much more quickly.
+
+Your task here is to complete the code in featureNormalize.m to:  
+• Subtract the mean value of each feature from the dataset.  
+• After subtracting the mean, additionally scale (divide) the feature
+values by their respective “standard deviations.”
+
+The standard deviation is a way of measuring how much variation there is
+in the range of values of a particular feature (most data points will
+lie within ±2 standard deviations of the mean); this is an alternative
+to taking the range of values (max-min). In Octave/MATLAB, you can use
+the “std” function to compute the standard deviation. For example,
+inside featureNormalize.m, the quantity X(:,1) contains all the values
+of x1 (house sizes) in the training set, so std(X(:,1)) computes the
+standard deviation of the house sizes. At the time that
+featureNormalize.m is called, the extra column of 1’s corresponding to
+x0 = 1 has not yet been added to X (see ex1 multi.m for details).
+
+You will do this for all the features and your code should work with
+datasets of all sizes (any number of features / examples). Note that
+each column of the matrix X corresponds to one feature.
+
+**Implementation Note:** When normalizing the features, it is important
+to store the values used for normalization - the mean value and the
+stan- dard deviation used for the computations. After learning the
+parameters from the model, we often want to predict the prices of houses
+we have not seen before. Given a new x value (living room area and
+number of bed- rooms), we must first normalize x using the mean and
+standard deviation that we had previously computed from the training
+set.
+
+## Gradient Descent
+
+Previously, you implemented gradient descent on a univariate regression
+problem. The only difference now is that there is one more feature in
+the matrix X. The hypothesis function and the batch gradient descent
+update rule remain unchanged.
+
+You should complete the code in computeCostMulti.m and
+gradientDescentMulti.m to implement the cost function and gradient
+descent for linear regression with multiple variables. If your code in
+the previous part (single variable) already supports multiple variables,
+you can use it here too.
+
+Make sure your code supports any number of features and is
+well-vectorized. You can use ‘size(X, 2)’ to find out how many features
+are present in the dataset.
+
+**Implementation Note:** In the multivariate case, the cost function can
+also be written in the following vectorized form:  
+\# formula  
+where  
+\# formula  
+The vectorized version is efficient when you’re working with numerical
+computing tools like Octave/MATLAB. If you are an expert with matrix
+operations, you can prove to yourself that the two forms are equivalent.
+
+## Optional (ungraded) exercise: Selecting learning rates
+
+In this part of the exercise, you will get to try out different learning
+rates for the dataset and find a learning rate that converges quickly.
+You can change the learning rate by modifying ex1 multi.m and changing
+the part of the code that sets the learning rate.
+
+The next phase in ex1 multi.m will call your gradientDescent.m func-
+tion and run gradient descent for about 50 iterations at the chosen
+learning rate. The function should also return the history of J(θ)
+values in a vector J. After the last iteration, the ex1 multi.m script
+plots the J values against the number of the iterations.
+
+If you picked a learning rate within a good range, your plot look
+similar Figure 4. If your graph looks very different, especially if your
+value of J(θ) increases or even blows up, adjust your learning rate and
+try again. We rec- ommend trying values of the learning rate α on a
+log-scale, at multiplicative steps of about 3 times the previous value
+(i.e., 0.3, 0.1, 0.03, 0.01 and so on). You may also want to adjust the
+number of iterations you are running if that will help you see the
+overall trend in the curve.
+
+Notice the changes in the convergence curves as the learning rate
+changes. With a small learning rate, you should find that gradient
+descent takes a very long time to converge to the optimal value.
+Conversely, with a large learning rate, gradient descent might not
+converge or might even diverge\!
+
+Using the best learning rate that you found, run the ex1 multi.m script
+to run gradient descent until convergence to find the final values of θ.
+Next, use this value of θ to predict the price of a house with 1650
+square feet and 3 bedrooms. You will use value later to check your
+implementation of the normal equations. Don’t forget to normalize your
+features when you make this prediction\!
+
+## Normal Equations
+
+In the lecture videos, you learned that the closed-form solution to
+linear regression is  
+\# formula  
+Using this formula does not require any feature scaling, and you will
+get an exact solution in one calculation: there is no “loop until
+convergence” like in gradient descent. Complete the code in normalEqn.m
+to use the formula above to calcu- late θ. Remember that while you don’t
+need to scale your features, we still need to add a column of 1’s to the
+X matrix to have an intercept term (θ0). The code in ex1.m will add the
+column of 1’s to X for you.
+
+Optional (ungraded) exercise: Now, once you have found θ using this
+method, use it to make a price prediction for a 1650-square-foot house
+with 3 bedrooms. You should find that gives the same predicted price as
+the value you obtained using the model fit with gradient descent (in
+Section 3.2.1).
