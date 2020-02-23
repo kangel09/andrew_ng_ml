@@ -16,7 +16,7 @@ This exercise is intended to replicate the first assignment in Andrew Ng's Machi
 All materials are modified from [Andrew Ng's Machine Learning course](https://www.coursera.org/learn/machine-learning/programming/8f3qT/linear-regression) on Coursera.
 
 ## Introduction  
-In this exercise, I implement linear regression and demonstrate the model using data. 
+In this exercise, we implement linear regression using gradient descent and the normal equation. Further, we will demonstrate the model's predictive capabilities using external data. 
 
 Files relevant to this exercise (from Matlab):  
 
@@ -440,4 +440,4 @@ one_home <- as.matrix(tibble(bias = 1, sq_feet = sq_ft, bedrooms = n_bedrooms))
 predicted <- one_home %*% theta
 ```
 
-Here, we estimate a three-bedroom, 1650 square foot house has a predicted price of $293,081
+Here, we estimate a three-bedroom, 1650 square foot house has a predicted price of $293,081 
