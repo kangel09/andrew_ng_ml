@@ -42,7 +42,7 @@ Files relevant to this exercise (from Matlab):
 
 
 ```{r get_data}
-population_profit <- read_csv("../data/ex1data1.txt", col_names = FALSE)
+population_profit <- read_csv("../data/ex1/ex1data1.txt", col_names = FALSE)
 colnames(population_profit) <- c("population", "profit")
 ```
 
