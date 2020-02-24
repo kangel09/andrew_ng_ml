@@ -7,16 +7,15 @@ output:
     keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, echo = TRUE, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+library(tidyverse)
+library(reshape2)
+library(wesanderson)
 ```
 
 ## Introduction
-In this exercise, you will implement logistic regression and apply it to two different datasets. Before starting on the programming exercise, we strongly recommend watching the video lectures and completing the review questions for the associated topics.  
-
-To get started with the exercise, you will need to download the starter code and unzip its contents to the directory where you wish to complete the exercise. If needed, use the cd command in Octave/MATLAB to change to this directory before starting this exercise.  
-
-You can also find instructions for installing Octave/MATLAB in the “Environment Setup Instructions” of the course website.
+In this exercise, we will implement logistic regression and apply it to two different datasets. All materials are derived from [Andrew Ng's Machine Learning course](https://www.coursera.org/learn/machine-learning/programming/ixFof/logistic-regression) on Coursera.  
 
 ## Files included in this exercise
 * ex2.m - Octave/MATLAB script that steps you through the exercise ex2 
@@ -33,22 +32,81 @@ You can also find instructions for installing Octave/MATLAB in the “Environmen
 * [$\star$] costFunctionReg.m - Regularized Logistic Regression Cost  
 
 [$\star$] indicates files you will need to complete
- 
-Throughout the exercise, you will be using the scripts ex2.m and ex2 reg.m. These scripts set up the dataset for the problems and make calls to functions that you will write. You do not need to modify either of them. You are only required to modify functions in other files, by following the instructions in this assignment.
 
 ## Logistic Regression
-In this part of the exercise, you will build a logistic regression model to predict whether a student gets admitted into a university.  
+Here we build a logistic regression model to predict whether a student gets admitted into a university.  
 
-Suppose that you are the administrator of a university department and you want to determine each applicant’s chance of admission based on their results on two exams. You have historical data from previous applicants that you can use as a training set for logistic regression. For each training example, you have the applicant’s scores on two exams and the admissions decision.  
+Suppose that an administrator of a university department wants to determine each applicant’s chance of admission based on their results on two exams. We have historical data from previous applicants that we can use as a training set for logistic regression. For each training example, we have the applicant’s scores on two exams and the admissions decision. The first two columns contains the exam scores and the third column contains the label. 
 
-Your task is to build a classification model that estimates an applicant’s probability of admission based the scores from those two exams. This outline and the framework code in ex2.m will guide you through the exercise.  
+We will build a classification model that estimates an applicant’s probability of admission based the scores from those two exams. 
 
-### Visualizing the data
-Before starting to implement any learning algorithm, it is always good to visualize the data if possible. In the first part of ex2.m, the code will load the data and display it on a 2-dimensional plot by calling the function plotData.  
+```{r }
+training <- read_csv("../data/ex2/ex2data1.txt", col_names = FALSE)
+colnames(training) <- c("exam1", "exam2", "admitted")
+test <- read_csv("../data/ex2/ex2data2.txt", col_names = FALSE)
+```
 
-You will now complete the code in plotData so that it displays a figure like Figure 1, where the axes are the two exam scores, and the positive and negative examples are shown with different markers.  
+### Exploring the data
+Before starting to implement any learning algorithm, it is always good to inspect and visualize the data if possible.  
 
-To help you get more familiar with plotting, we have left plotData.m empty so you can try to implement it yourself. However, this is an optional (ungraded) exercise. We also provide our implementation below so you can copy it or refer to it. If you choose to copy our example, make sure you learn what each of its commands is doing by consulting the Octave/MATLAB documentation.  
+```{r summarize}
+summary(training)
+```
+
+```{r bar_plot}
+theme <- theme_classic() + 
+            theme(plot.title = element_text(color = "gray30", size=18, face="bold"), 
+                  axis.title.x = element_text(color = "gray34"),
+                  axis.title.y = element_text(color = "gray34"))
+training %>%
+  ggplot(aes(x = admitted)) +
+    geom_bar(aes(y = (..count..) / sum(..count..))) + 
+    scale_x_continuous("Admitted", breaks = c(0, 1), labels = c("No", "Yes")) + 
+    theme + 
+    ggtitle("Percent of Students Admitted") + 
+    ylab("Perceent")
+```
+
+It appears the data set is not balanced with approximately 60% admitted and 40% not admitted.
+
+```{r ditribution_plots}
+training %>%
+  ggplot(aes(x = exam1)) + 
+  geom_density(fill = "blue4", color = "blue1", alpha = 0.7) + 
+  theme + 
+  ggtitle("Distribution of the First Exam") + 
+  xlab("Exam 1") + 
+  ylab("Density")
+
+training %>%
+  ggplot(aes(x = exam2)) + 
+  geom_density(fill = "red2", alpha = 0.7) + 
+  theme + 
+  ggtitle("Distribution of the Second Exam") + 
+  xlab("Exam 1") + 
+  ylab("Density")
+```
+
+Neither distibution is Normally ditributed. The summary statistics and the interquartile ranges look similar for each exam. But when we visualize the data, we can see the second exam is bimodal. It looks like more students did better and worse, with fewer falling in the middle.
+
+Let's see how the two exams correlate with eachother and admittance.
+
+```{r}
+training %>% 
+  ggplot(aes(x = exam1, y = exam2)) + 
+    geom_point(aes(color = as.factor(admitted),
+                   fill = as.factor(admitted)),
+                   size = 5,
+                   alpha = 0.75) + 
+      scale_color_manual(values=c("lightsteelblue4", "blue4")) + 
+      theme + 
+  ggtitle("Correlation Between Exams and Admittance") +
+  xlab("Exam 1") + 
+  ylab("Exam 2") + 
+  theme(legend.title = element_blank()) 
+```
+
+There is pretty clean seperation here between the two categories, admitted and not admitted. It appears the average needed to be roughly greater than 60 to pass but this doesn't seem to be strictly true. 
 
 ### Implementation
 #### Warmup exercise: sigmoid function
@@ -59,7 +117,14 @@ $$h_\theta(x) = g(\theta ^ T X)$$
 where function g is the sigmoid function. The sigmoid function is defined as:
 
 $$g(z) = \frac{1}{1 + e ^ {-z}}$$
-Your first step is to implement this function in sigmoid.m so it can be called by the rest of your program. When you are finished, try testing a few values by calling sigmoid(x) at the Octave/MATLAB command line. For large positive values of x, the sigmoid should be close to 1, while for large negative values, the sigmoid should be close to 0. Evaluating sigmoid(0) should give you exactly 0.5. Your code should also work with vectors and matrices. For a matrix, your function should perform the sigmoid function on every element.  
+Your first step is to implement this function in sigmoid.m so it can be called by the rest of your program. When you are finished, try testing a few values by calling sigmoid(x) at the Octave/MATLAB command line. For large positive values of x, the sigmoid should be close to 1, while for large negative values, the sigmoid should be close to 0. Evaluating sigmoid(0) should give you exactly 0.5. Your code should also work with vectors and matrices. For a matrix, your function should perform the sigmoid function on every element.
+
+
+```{}
+
+
+```
+
 
 You can submit your solution for grading by typing submit at the Octave/MATLAB command line. The submission script will prompt you for your login e-mail and submission token and ask you which files you want to submit. You can obtain a submission token from the web page for the assignment.  
 
